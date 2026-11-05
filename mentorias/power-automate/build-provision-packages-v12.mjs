@@ -27,22 +27,30 @@ function provisionActions(){
  const audit=auditActions(),actions=audit.actions;
  const createList=Object.fromEntries([http('Crear_lista','POST','_api/web/lists',{}, {Title:"@items('Crear_recursos')?['title']",BaseTemplate:"@items('Crear_recursos')?['template']"})]);
  const createField=Object.fromEntries([http('Crear_columna','POST',"@concat('_api/web/lists/getbytitle(''',items('Crear_recursos')?['title'],''')/fields/createfieldasxml')",{}, {parameters:{__metadata:{type:'SP.XmlSchemaFieldCreationInformation'},SchemaXml:"@items('Crear_columnas_faltantes')?['schemaXml']",Options:0}},{Accept:'application/json;odata=verbose','Content-Type':'application/json;odata=verbose'})]);
+ actions.Consultar_roles_control_total=Object.fromEntries([http('x','GET','_api/web/roledefinitions?$select=Id,Name,RoleTypeKind,BasePermissions',{[audit.last]:['Succeeded']},undefined,headers,true)]).x;
+ actions.Filtrar_control_total=query("@body('Consultar_roles_control_total')?['value']","@and(equals(int(item()?['RoleTypeKind']),5),equals(string(item()?['BasePermissions']?['High']),'2147483647'),equals(string(item()?['BasePermissions']?['Low']),'4294967295'))",{Consultar_roles_control_total:['Succeeded']});
  actions.Autorizar_provision={
-  type:'If',runAfter:{[audit.last]:['Succeeded']},
-  expression:{and:[{equals:["@triggerBody()?['confirmacion']",'APROVISIONAR-SWC12-TEST']},{equals:["@length(body('Filtrar_conflictos'))",0]}]},
+  type:'If',runAfter:{Filtrar_control_total:['Succeeded']},
+  expression:{and:[{equals:["@triggerBody()?['confirmacion']",'APROVISIONAR-SWC12-TEST']},{equals:["@length(body('Filtrar_conflictos'))",0]},{equals:["@length(body('Filtrar_control_total'))",1]}]},
   actions:{
-   Crear_recursos:{type:'Foreach',foreach:"@outputs('Contrato')?['resources']",runtimeConfiguration:{concurrency:{repetitions:1}},actions:{
+   Asegurar_founders_hub:Object.fromEntries([http('x','POST','_api/web/ensureuser',{}, {logonName:'i:0#.f|membership|foundershub@universidadean.edu.co'},headers,true)]).x,
+   Asegurar_administrador:Object.fromEntries([http('x','POST','_api/web/ensureuser',{Asegurar_founders_hub:['Succeeded']}, {logonName:'i:0#.f|membership|afcaballero@universidadean.edu.co'},headers,true)]).x,
+   Crear_recursos:{type:'Foreach',foreach:"@outputs('Contrato')?['resources']",runAfter:{Asegurar_administrador:['Succeeded']},runtimeConfiguration:{concurrency:{repetitions:1}},actions:{
     Filtrar_recurso_actual:query("@body('Consultar_listas')?['value']","@equals(item()?['Title'],items('Crear_recursos')?['title'])"),
     Crear_lista_si_falta:{type:'If',runAfter:{Filtrar_recurso_actual:['Succeeded']},expression:{and:[{equals:["@length(body('Filtrar_recurso_actual'))",0]}]},actions:createList,else:{actions:{Ya_existe:compose('Recurso existente compatible; no se modifica.')}}},
     Crear_columnas_faltantes:{type:'Foreach',foreach:"@items('Crear_recursos')?['fields']",runAfter:{Crear_lista_si_falta:['Succeeded']},runtimeConfiguration:{concurrency:{repetitions:1}},actions:{
      Filtrar_columna_actual:query("@if(equals(length(body('Filtrar_recurso_actual')),0),json('[]'),first(body('Filtrar_recurso_actual'))?['Fields'])","@equals(item()?['InternalName'],items('Crear_columnas_faltantes')?['name'])"),
      Crear_columna_si_falta:{type:'If',runAfter:{Filtrar_columna_actual:['Succeeded']},expression:{and:[{equals:["@length(body('Filtrar_columna_actual'))",0]}]},actions:createField,else:{actions:{Columna_existente:compose('Columna existente compatible; no se modifica.')}}}
-    }}
+    }},
+    Romper_herencia:Object.fromEntries([http('x','POST',"@concat('_api/web/lists/getbytitle(''',items('Crear_recursos')?['title'],''')/breakroleinheritance(copyRoleAssignments=false,clearSubscopes=false)')",{Crear_columnas_faltantes:['Succeeded']},undefined,headers,true)]).x,
+    Autorizar_founders_hub:Object.fromEntries([http('x','POST',"@concat('_api/web/lists/getbytitle(''',items('Crear_recursos')?['title'],''')/roleassignments/addroleassignment(principalid=',string(body('Asegurar_founders_hub')?['Id']),',roledefid=',string(first(body('Filtrar_control_total'))?['Id']),')')",{Romper_herencia:['Succeeded']},undefined,headers,true)]).x,
+    Autorizar_administrador:Object.fromEntries([http('x','POST',"@concat('_api/web/lists/getbytitle(''',items('Crear_recursos')?['title'],''')/roleassignments/addroleassignment(principalid=',string(body('Asegurar_administrador')?['Id']),',roledefid=',string(first(body('Filtrar_control_total'))?['Id']),')')",{Autorizar_founders_hub:['Succeeded']},undefined,headers,true)]).x
    }}
   },
-  else:{actions:{Detener:{type:'Terminate',inputs:{runStatus:'Failed',runError:{code:'PROVISION_BLOQUEADO',message:'Frase inválida o auditoría con conflictos.'}}}}}
+  else:{actions:{Detener:{type:'Terminate',inputs:{runStatus:'Failed',runError:{code:'PROVISION_BLOQUEADO',message:'Frase inválida, auditoría con conflictos o Control total no verificable por BasePermissions.'}}}}}
  };
- actions.Resultado_Provision=compose({estado:'PREPARADO_LOCALMENTE_NO_EJECUTADO',mensaje:'Las escrituras solo están dentro de Autorizar_provision.'},{Autorizar_provision:['Succeeded','Failed']});
+ actions.Inventario_posterior={type:'Foreach',foreach:"@outputs('Contrato')?['resources']",runAfter:{Autorizar_provision:['Succeeded','Failed','TimedOut']},runtimeConfiguration:{concurrency:{repetitions:1}},actions:{Leer_recurso_posterior:Object.fromEntries([http('x','GET',"@concat('_api/web/lists/getbytitle(''',items('Inventario_posterior')?['title'],''')?$select=Id,Title,BaseTemplate,HasUniqueRoleAssignments,Fields/InternalName,Fields/TypeAsString,Fields/Required,Fields/Indexed,Fields/EnforceUniqueValues&$expand=Fields')",{},undefined,headers,true)]).x,Leer_permisos_posteriores:Object.fromEntries([http('x','GET',"@concat('_api/web/lists/getbytitle(''',items('Inventario_posterior')?['title'],''')/roleassignments?$expand=Member,RoleDefinitionBindings&$select=Member/PrincipalType,RoleDefinitionBindings/Id,RoleDefinitionBindings/BasePermissions')",{Leer_recurso_posterior:['Succeeded']},undefined,headers,true)]).x}};
+ actions.Resultado_Provision=compose({estado:'INVENTARIO_POSTERIOR_COMPLETADO',mensaje:'Revise cada acción segura del inventario posterior antes de declarar aislamiento.'},{Inventario_posterior:['Succeeded','Failed','TimedOut']});
  return actions;
 }
 function definition(name,provision){const flowId=crypto.randomUUID(),audit=provision?null:auditActions();return{name:flowId,id:`/providers/Microsoft.Flow/flows/${flowId}`,type:'Microsoft.Flow/flows',properties:{apiId:'/providers/Microsoft.PowerApps/apis/shared_logicflows',displayName:name,definition:{$schema:'https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#',contentVersion:'1.0.0.0',parameters:{$authentication:{defaultValue:{},type:'SecureObject'},$connections:{defaultValue:{},type:'Object'}},triggers:trigger(provision),actions:provision?provisionActions():audit.actions,outputs:{}},connectionReferences:{shared_sharepointonline:{connectionName:'REPLACE_WITH_FOUNDERS_HUB',source:'Embedded',id:spApi,tier:'NotSpecified',apiName:'sharepointonline'}},flowFailureAlertSubscribed:true,isManaged:false}}}
