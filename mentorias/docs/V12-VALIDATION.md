@@ -8,6 +8,6 @@ La autorización resuelve MentorID desde la credencial, valida vigencia/revocaci
 
 Las revisiones son append-only. La cabecera se lee por REST para obtener `@odata.etag` y se actualiza con `IF-MATCH`; solo después se marca la revisión vigente. La idempotencia persiste Pendiente/Confirmada/Fallida y ResultadoJson; una repetición confirmada devuelve el resultado original y una reserva no recuperable se libera como fallida para reintento explícito.
 
-Los documentos usan un único modelo: archivos append-only, con versionado nativo deshabilitado. La secuencia es CreateFile → ItemId → PatchFileItem; consulta GetFileItems y descarga GetFileContent autorizada. Se validan tamaño, MIME y nombre en backend. No se entrega URL directa de SharePoint.
+Los documentos usan un único modelo: archivos append-only, con versionado nativo deshabilitado. `SWC12_DocumentosCabecera` conserva DocumentoID, VersionActual e ItemVigenteId; una revisión incrementa la versión mediante ETag/IF-MATCH, crea otro archivo y conserva el anterior. La secuencia es CreateFile → ItemId → PatchFileItem → actualización condicional de cabecera. La consulta devuelve todo el historial y la descarga resuelve primero la versión vigente dentro de la empresa autorizada.
 
 Las pruebas locales validan estructura y contratos, no E2E. Importación, conexión, CORS y operaciones reales siguen pendientes de ejecución institucional en TEST. GitHub Pages no puede ocultar la URL firmada del trigger ni corregir un preflight rechazado.

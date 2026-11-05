@@ -1,29 +1,35 @@
 # Auditoría de versionado documental V1.2
 
-Se revisaron expresiones, filtros y `runAfter` de las definiciones existentes, sin modificar ni reconstruir los paquetes.
+Fecha: 5 de noviembre de 2026. Corrección basada en `a69357e`.
 
-## Cadena de escritura del flujo mentor
+## Modelo definitivo
 
-1. `Validar_archivo` verifica longitud base64, MIME permitido y longitud del nombre.
-2. `Buscar_idempotencia` consulta la biblioteca por IdempotencyKey y `Validar_bitacora` filtra simultáneamente BitacoraId y EmpresaId.
-3. Solo si no existe documento previo y la bitácora pertenece a la empresa se ejecuta `Reservar_operacion`.
-4. `Documento_id` genera un GUID; `Crear_archivo` ejecuta CreateFile con un nombre que incluye EmpresaId, tipo e IdempotencyKey. No existe acción de sobrescritura ni ruta reutilizada para claves distintas.
-5. `ItemId_archivo` depende de CreateFile. `Actualizar_metadatos` depende del ItemId y usa PatchFileItem para EmpresaId, BitacoraId, DocumentoId, VersionDocumento, IdempotencyKey, hash, MentorId, tipo y nombre.
-6. La confirmación idempotente depende de PatchFileItem; la respuesta depende de la confirmación.
+`SWC12_DocumentosCabecera` mantiene una fila por documento lógico: DocumentoId único, EmpresaId, VersionActual, ItemVigenteId y Estado. `SWC12_Documentos` conserva un archivo físico por revisión. El versionado nativo permanece deshabilitado; no se sobrescriben binarios.
 
-Esto demuestra que cargas con claves idempotentes distintas crean archivos independientes y conservan los anteriores. `GetFileItems` filtra por EmpresaId y devuelve todos los archivos, por lo que la consulta ofrece el historial completo de cargas de la empresa.
+## Nueva carga
 
-## Descarga
+1. La autorización general del flujo resuelve el MentorID desde la credencial y valida la asignación activa de EmpresaID antes del switch.
+2. Se consulta `SWC12_Operaciones`. Una clave confirmada devuelve ResultadoJson; una clave pendiente o fallida devuelve conflicto y no vuelve a crear un archivo.
+3. Se reserva la operación, se genera DocumentoId una sola vez y VersionDocumento=1.
+4. CreateFile crea el archivo independiente. PatchFileItem registra DocumentoId, EmpresaId, versión, referencia anterior, FechaCarga, MentorId, nombre, IdempotencyKey, EsVigente y EstadoVersion.
+5. Se crea la cabecera con ItemVigenteId. Solo después se confirma la operación.
 
-En ambos flujos, `Buscar_documento` filtra conjuntamente `EmpresaId` y `DocumentoId`. `Leer_archivo`/GetFileContent solo se ejecuta en la rama donde el resultado contiene exactamente un elemento. Un documento ajeno produce el mismo 404 genérico que uno inexistente.
+## Nueva versión
 
-## Incompatibilidad detectada
+1. El cliente envía el DocumentoId existente; no puede indicar MentorID.
+2. Se busca la cabecera simultáneamente por DocumentoId, EmpresaId y Estado activo.
+3. La cabecera se lee por REST para obtener `@odata.etag`, VersionActual e ItemVigenteId.
+4. VersionDocumento se calcula como VersionActual+1 y DocumentoId se toma de la cabecera, no del navegador.
+5. Se crea otro archivo físico con nombre DocumentoId-versión-idempotencia; inicialmente queda Candidata.
+6. La cabecera se actualiza con `IF-MATCH`. Si otra ejecución ganó, el archivo queda Conflicto, la operación queda Fallida y no se convierte en vigente.
+7. Tras ganar el ETag, la nueva revisión se marca Vigente y la anterior Histórica. La cabecera es la autoridad para ItemVigenteId.
 
-`cargarNuevaVersionDocumento` reutiliza la misma cadena de carga, pero genera un DocumentoId nuevo y asigna `VersionDocumento = ItemId` de SharePoint. No conserva el DocumentoId original ni calcula una revisión correlativa por documento. Por ello:
+## Consulta y descarga
 
-- Sí hay archivos append-only e historial completo por empresa.
-- No hay sobrescritura del archivo anterior.
-- No puede demostrarse una cadena de versiones del mismo documento bajo un DocumentoId estable.
-- VersionDocumento es un identificador monotónico de elemento, no un número de versión por documento.
+El contrato devuelve todas las filas de la biblioteca, incluyendo VersionDocumento, DocumentoAnteriorID, FechaCarga, vigente y EstadoVersion. La descarga busca primero la cabecera y todos los archivos del DocumentoId dentro de la EmpresaID autorizada, filtra por ItemVigenteId y solo entonces ejecuta GetFileContent. Para documentos legados sin cabecera se admite únicamente una revisión vigente implícita.
 
-Esta incompatibilidad requiere una futura revisión de los paquetes; por instrucción, los ZIP originales permanecieron byte por byte intactos.
+## Compatibilidad de legados
+
+`migrate-v12-document-headers.ps1` agrupa metadatos existentes y crea exclusivamente filas de cabecera. No ejecuta Set-PnPListItem sobre SWC12_Documentos ni modifica archivos. Un documento legado sin cabecera sigue visible y descargable; para crearle una revisión primero debe migrarse su cabecera.
+
+No se ejecutó la migración ni se realizaron escrituras en SharePoint.
