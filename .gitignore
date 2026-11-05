@@ -1,0 +1,35 @@
+# Dependencies and generated local state
+node_modules/
+.cache/
+coverage/
+
+# Secrets and environment-specific configuration
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+secrets/
+credentials/
+tokens/
+cookies/
+web/config.local.js
+web/msal.config.js
+
+# Certificates and private keys
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Editor and OS state
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.user
+*.suo
+
+# OAuth/CORS test output (may contain tenant-specific metadata)
+oauth-test/results/
+oauth-test/*.local.json
