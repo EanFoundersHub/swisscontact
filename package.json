@@ -6,6 +6,8 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build:flows": "node power-automate/build-packages.mjs",
-    "validate:flows": "node power-automate/validate-packages.mjs"
+    "validate:flows": "node power-automate/validate-packages.mjs",
+    "build:oauth-test": "node oauth-test/build-identity-package.mjs",
+    "validate:oauth-test": "node oauth-test/validate-identity-package.mjs"
   }
 }
