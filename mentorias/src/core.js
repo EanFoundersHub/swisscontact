@@ -26,7 +26,7 @@ export function normalizePayload(value) {
   return result;
 }
 
-export function consolidate(empresas, asignaciones, versiones, documentos, cabeceras = []) {
+export function consolidate(empresas, asignaciones, versiones, documentos, cabeceras = [], mentores = []) {
   const current = cabeceras.length ? currentRevisions(cabeceras, versiones) : latestRevisions(versiones);
   return (empresas || []).map(empresa => {
     const sessions = current.filter(x => x.empresaId === empresa.empresaId && x.estado !== "Anulada");
@@ -36,7 +36,7 @@ export function consolidate(empresas, asignaciones, versiones, documentos, cabec
     const updated = [...sessions, ...docs].reduce((a, x) => !a || x.modificado > a ? x.modificado : a, empresa.modificado || null);
     return {
       ...empresa,
-      mentores: mentors.map(x => x.mentorNombre || x.mentorEmail),
+      mentores: mentors.map(x => x.mentorNombre || x.mentorEmail || mentores.find(m => (m.mentorId || m.MentorId) === x.mentorId)?.nombre || mentores.find(m => (m.mentorId || m.MentorId) === x.mentorId)?.Nombre || x.mentorId),
       numeroBitacoras: sessions.length,
       horasEjecutadas: sessions.reduce((n, x) => n + Number(x.duracionMinutos || 0), 0) / 60,
       planEstado: docs.some(x => x.tipo === "PlanAccion") ? "Cargado" : "Pendiente",
