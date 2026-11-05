@@ -1,22 +1,23 @@
-# Matriz de permisos V1.2
+# Matriz de auditoría de permisos V1.2
 
-| Recurso | Herencia deseada | Principales permitidos | Nivel | Verificación |
-|---|---|---|---|---|
-| SWC12_Credenciales | Rota | `ServiceAccountEmail` y cada `AdminEmails` explícito | Full Control | Rol existente, asignaciones efectivas y vistas |
-| SWC12_Operaciones | Rota | `ServiceAccountEmail` y cada `AdminEmails` explícito | Full Control | Rol existente y asignaciones efectivas |
-| SWC12_Accesos | Rota | `ServiceAccountEmail` y cada `AdminEmails` explícito | Full Control | Rol existente y asignaciones efectivas |
-| Resto de listas V1.2 | Heredada | Política del sitio TEST | Heredado | Inventario PREVIEW |
-| SWC12_Documentos | Heredada | La conexión de los flujos; el mentor accede solo mediante flujo | Heredado | Autorización de empresa en el flujo |
+| Recurso | Cuenta de servicio autorizada | Administrador humano autorizado | Estado esperado |
+|---|---|---|---|
+| SWC12_Credenciales | foundershub@universidadean.edu.co | afcaballero@universidadean.edu.co | Herencia rota; ninguna otra lectura/escritura |
+| SWC12_Operaciones | foundershub@universidadean.edu.co | afcaballero@universidadean.edu.co | Herencia rota; ninguna otra lectura/escritura |
+| SWC12_Accesos | foundershub@universidadean.edu.co | afcaballero@universidadean.edu.co | Herencia rota; ninguna otra lectura/escritura |
 
-`Full Control` es un nivel predeterminado de SharePoint, pero el script además exige que el rol exista en el sitio concreto. Los administradores no están codificados: deben entregarse explícitamente en `AdminEmails`.
+El PREVIEW enumera para cada asignación: nombre visible, LoginName, correo resuelto, tipo de principal, origen directo/heredado, roles, Full Control, lectura, escritura y condición autorizada.
 
-`ClearSubScopes` no se utiliza porque borraría asignaciones únicas de objetos hijos y los haría heredar. PREVIEW enumera subámbitos únicos; su presencia bloquea Apply para revisión manual.
+Tipos identificables:
 
-## TokenValue
+- Usuario.
+- Grupo SharePoint.
+- Grupo Microsoft Entra o de seguridad.
+- Grupo de distribución.
+- Otros tipos devueltos por SharePoint.
 
-- Debe permanecer fuera de todas las vistas de `SWC12_Credenciales`.
-- PREVIEW informa cualquier vista que lo exponga; Apply lo retira.
-- Los paquetes fueron recorridos nodo por nodo: ninguna acción Response contiene `accessToken` ni `TokenValue`.
-- Riesgo residual: TokenValue está en texto y equivale a una credencial reutilizable. La mitigación depende de aislamiento de lista, Secure Inputs/Outputs, caducidad, revocación y protección del endpoint. Un administrador de sitio o propietario de la conexión con Full Control puede leerlo.
+Los claims se normalizan extrayendo una dirección completa y canónica. Nunca se autoriza por coincidencia parcial. Un principal sin correo verificable puede inventariarse, pero no se considera autorizado. Si un principal presenta correos distintos, el script detiene la auditoría por ambigüedad.
 
-La confirmación de permisos efectivos sigue pendiente del PREVIEW live autenticado.
+La cuenta Founders Hub es una cuenta de servicio. `afcaballero@universidadean.edu.co` es el único administrador humano declarado. El script rechaza cuentas adicionales y también rechaza que una misma dirección ocupe ambos roles.
+
+El informe live no consulta elementos de la lista de credenciales ni exporta valores. El campo sensible aparece redactado en la matriz de columnas. El riesgo residual es el almacenamiento en texto: cualquier principal con permisos efectivos de lectura podría recuperar credenciales fuera de este script.

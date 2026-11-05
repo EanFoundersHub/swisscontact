@@ -1,27 +1,20 @@
-# Informe PREVIEW de preinstalación V1.2
+# PREVIEW autenticado V1.2
 
-Fecha: 5 de noviembre de 2026. Base auditada: `cef699a98a99e18e498bb4ccaecff74ac17dc7b6`.
+Base: `c128b53`. Destino único: `https://universidadeaneduco.sharepoint.com/sites/SWC-Mentorias-TEST`.
 
-## Resultado local
+El script valida el URI antes de conectar y valida nuevamente la URL resuelta por SharePoint. Rechaza cualquier dominio, esquema, ruta, query o fragmento diferente.
 
-- El script valida exactamente `https://universidadeaneduco.sharepoint.com/sites/SWC-Mentorias-TEST` tanto antes como después de conectar.
-- PREVIEW establece una conexión autenticada de solo lectura, inventaría listas/bibliotecas, columnas, vistas, permisos y subámbitos, y escribe un informe local.
-- Compara plantilla, tipo, obligatoriedad, índice, unicidad y opciones Choice.
-- Una diferencia existente se clasifica como `CONFLICTO`; `-Apply` se detiene antes de escribir. Solo crea recursos ausentes.
-- Comprueba que el rol solicitado exista mediante `Get-PnPRoleDefinition`; no inventa administradores.
-- No usa `ClearSubScopes`. Si encuentra permisos únicos en elementos de una lista sensible, informa conflicto y detiene Apply.
-- Después de Apply enumera asignaciones efectivas y rechaza principales distintos de Founders Hub/administradores, salvo Limited Access generado por SharePoint.
+Sin `-Apply` realiza exclusivamente:
 
-## Ejecución live pendiente
+- conexión interactiva mediante una aplicación Entra institucional indicada con ClientId;
+- inventario de listas y biblioteca;
+- comparación de plantilla, tipo, obligatoriedad, índice, unicidad y opciones Choice;
+- lectura de vistas, sin leer elementos o valores de credenciales;
+- enumeración de asignaciones de roles de las tres listas sensibles;
+- clasificación de usuario, grupo SharePoint, grupo Entra/seguridad y grupo de distribución;
+- cálculo de Full Control, lectura y escritura a partir de BasePermissions;
+- generación de un informe Markdown local.
 
-No se ejecutó el PREVIEW contra SharePoint porque esta sesión no recibió una conexión institucional autenticada ni los valores reales de `ServiceAccountEmail` y `AdminEmails`. El resultado efectivo deberá generarse así, sin `-Apply`:
+El informe redacta el nombre del campo sensible y nunca contiene valores de credenciales. No se usa coincidencia parcial de correos, no se limpia ningún subámbito y no se ejecuta migración documental.
 
-```powershell
-./sharepoint/provision-v12-test.ps1 `
-  -SiteUrl 'https://universidadeaneduco.sharepoint.com/sites/SWC-Mentorias-TEST' `
-  -ServiceAccountEmail '<FOUNDERS-HUB-REAL>' `
-  -AdminEmails '<ADMIN-REAL-1>','<ADMIN-REAL-2>' `
-  -ReportPath './docs/V12-PREVIEW-LIVE.md'
-```
-
-Esta ejecución consulta SharePoint y genera el informe, pero no realiza escrituras. No debe usarse `-Apply` hasta resolver todos los conflictos y revisar el informe live.
+El PREVIEW live no fue ejecutado en esta preparación: requiere inicio de sesión institucional y el ClientId real de la aplicación Entra autorizada para PnP.PowerShell.
