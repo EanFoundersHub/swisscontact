@@ -1,4 +1,16 @@
-# Swisscontact Mentorías V1 — instalación TEST
+# Swisscontact Mentorías V1.2 — instalación TEST
+
+La implementación activa del frontend corresponde a V1.2. Los paquetes V1.1 permanecen como respaldo sin modificaciones. Los paquetes nuevos están en `dist/power-automate-v12/`; su guía específica es `docs/V12-IMPORT-ROLLBACK.md` y el alcance de seguridad está en `docs/V12-VALIDATION.md`.
+
+Comprobación local V1.2:
+
+```powershell
+npm run build:flows:v12
+npm run validate:flows:v12
+npm test
+```
+
+El frontend consulta empresas asignadas, busca por NIT o razón social, abre las cinco secciones del expediente y utiliza tokens opacos de TEST en `sessionStorage`. No se almacenan tokens ni URLs firmadas en el repositorio. La URL del trigger sigue siendo visible para el navegador por la naturaleza de GitHub Pages; consulte el informe antes de habilitar un flujo.
 
 El módulo está preparado para publicarse de forma independiente en `https://eanfoundershub.github.io/swisscontact/mentorias/`. El Dashboard MEL permanece en la raíz del repositorio. Para comandos locales, sitúese primero en el directorio `mentorias`.
 

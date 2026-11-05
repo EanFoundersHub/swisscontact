@@ -1,8 +1,2 @@
-// Configuración segura de ejemplo. Sustituya únicamente por URLs de un proxy
-// autenticado con Entra ID; nunca pegue aquí secretos ni URL firmadas de flujo.
-const saved = JSON.parse(localStorage.getItem('SWC_API_CONFIG') || '{}');
-export default {
-  apiUrl: saved.apiUrl || window.SWC_CONFIG?.apiUrl || '',
-  adminApiUrl: saved.adminApiUrl || window.SWC_CONFIG?.adminApiUrl || '',
-  timeoutMs: 30000
-};
+function tokenFromFragment(){const hash=new URLSearchParams(location.hash.replace(/^#/,'')),token=hash.get('access_token')||'';if(token){sessionStorage.setItem('SWC12_ACCESS_TOKEN',token);history.replaceState(null,'',`${location.pathname}${location.search}`)}return token}tokenFromFragment();
+export default{apiUrl:sessionStorage.getItem('SWC12_API_URL')||window.SWC_CONFIG?.apiUrl||'',adminApiUrl:sessionStorage.getItem('SWC12_ADMIN_API_URL')||window.SWC_CONFIG?.adminApiUrl||'',accessToken:sessionStorage.getItem('SWC12_ACCESS_TOKEN')||'',adminAccessToken:sessionStorage.getItem('SWC12_ADMIN_TOKEN')||'',timeoutMs:30000};
