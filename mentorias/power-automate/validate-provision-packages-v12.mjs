@@ -1,0 +1,14 @@
+import fs from'node:fs';import path from'node:path';import crypto from'node:crypto';import{execFileSync}from'node:child_process';
+const root=path.resolve(import.meta.dirname,'..'),dist=path.join(root,'dist','power-automate-provision-v12'),site='https://universidadeaneduco.sharepoint.com/sites/SWC-Mentorias-TEST',schema=JSON.parse(fs.readFileSync(path.join(root,'sharepoint','schema-v12.json')));
+if(schema.resources.length!==11||schema.resources.filter(x=>x.template===100).length!==10||schema.resources.filter(x=>x.template===101).length!==1)throw Error('Contrato no contiene 10 listas y una biblioteca');
+function walk(o,fn,pathParts=[]){if(!o||typeof o!=='object')return;fn(o,pathParts);for(const[k,v]of Object.entries(o))walk(v,fn,[...pathParts,k])}
+for(const name of ['SWC-V12-PREVIEW-TEST','SWC-V12-PROVISION-TEST']){
+ const zipPath=path.join(dist,`${name}.zip`),entries=execFileSync('tar',['-tf',zipPath],{encoding:'utf8'}).split(/\r?\n/).filter(Boolean);for(const required of ['manifest.json','Microsoft.Flow/flows/manifest.json'])if(!entries.includes(required))throw Error(`${name}: falta ${required}`);if(entries.some(x=>x.startsWith('./')))throw Error(`${name}: raíz ZIP inválida`);
+ const base=path.join(dist,name,'Microsoft.Flow','flows'),fm=JSON.parse(fs.readFileSync(path.join(base,'manifest.json'))),asset=fm.flowAssets.assetPaths[0],fd=path.join(base,asset);for(const f of ['definition.json','apisMap.json','connectionsMap.json'])JSON.parse(fs.readFileSync(path.join(fd,f)));
+ const def=JSON.parse(fs.readFileSync(path.join(fd,'definition.json'))),raw=JSON.stringify(def),writes=[];walk(def,(o,p)=>{if(o.type==='OpenApiConnection'){const method=o.inputs?.parameters?.parameters?.method;if(o.inputs?.parameters?.dataset!==site)throw Error(`${name}: destino dinámico o incorrecto`);if(method!=='GET')writes.push({method,path:p.join('/')});if(['DELETE','PATCH','MERGE'].includes(method))throw Error(`${name}: método prohibido ${method}`)}});
+ if(raw.includes("getbytitle('SWC12_Credenciales')/items")||raw.includes('TokenValue eq'))throw Error(`${name}: lee valores de credenciales`);
+ if(name.includes('PREVIEW')&&writes.length)throw Error(`${name}: PREVIEW contiene escritura`);
+ if(name.includes('PROVISION')){if(!raw.includes('APROVISIONAR-SWC12-TEST')||!raw.includes('Filtrar_conflictos')||!raw.includes('PROVISION_BLOQUEADO'))throw Error(`${name}: falta barrera de provisión`);for(const w of writes)if(!w.path.includes('Autorizar_provision/actions'))throw Error(`${name}: escritura fuera de barrera: ${w.path}`)}
+ for(const marker of ['Resultado_JSON','Informe_Markdown','NO_VERIFICABLE','HasUniqueRoleAssignments','EnforceUniqueValues','Choices'])if(!raw.includes(marker))throw Error(`${name}: falta ${marker}`);
+ console.log(`OK ${name}: ${entries.length} entradas, ${writes.length} escritura(s) controlada(s), SHA256 ${crypto.createHash('sha256').update(fs.readFileSync(zipPath)).digest('hex').toUpperCase()}`)
+}

@@ -9,6 +9,8 @@
     "validate:flows": "node power-automate/validate-packages.mjs",
     "build:flows:v12": "node power-automate/build-packages-v12.mjs",
     "validate:flows:v12": "node power-automate/validate-packages-v12.mjs",
+    "build:provision:v12": "node power-automate/build-provision-packages-v12.mjs",
+    "validate:provision:v12": "node power-automate/validate-provision-packages-v12.mjs",
     "build:oauth-test": "node oauth-test/build-identity-package.mjs",
     "validate:oauth-test": "node oauth-test/validate-identity-package.mjs"
   }
