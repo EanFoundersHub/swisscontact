@@ -13,8 +13,8 @@ secrets/
 credentials/
 tokens/
 cookies/
-web/config.local.js
-web/msal.config.js
+mentorias/config.local.js
+mentorias/msal.config.js
 
 # Certificates and private keys
 *.pfx
@@ -31,5 +31,5 @@ Thumbs.db
 *.suo
 
 # OAuth/CORS test output (may contain tenant-specific metadata)
-oauth-test/results/
-oauth-test/*.local.json
+mentorias/oauth-test/results/
+mentorias/oauth-test/*.local.json

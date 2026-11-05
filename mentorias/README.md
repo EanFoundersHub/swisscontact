@@ -1,5 +1,7 @@
 # Swisscontact Mentorías V1 — instalación TEST
 
+El módulo está preparado para publicarse de forma independiente en `https://eanfoundershub.github.io/swisscontact/mentorias/`. El Dashboard MEL permanece en la raíz del repositorio. Para comandos locales, sitúese primero en el directorio `mentorias`.
+
 La solución está aislada de `diagnosticoPAF`. No migra, edita ni sobrescribe los JSON de radiografía.
 
 ## 1. Crear y aprovisionar el sitio
