@@ -6,7 +6,8 @@ El ejecutor usa los esquemas de los paquetes locales `SWC-MENTORIAS-V12-TEST` y 
 
 - PowerShell 7 (`pwsh`).
 - URL firmada del flujo importado `SWC-MENTORIAS-V12-TEST`.
-- Workflow ID importado fijado en el ejecutor: `4b93e1a2-c00d-4349-8829-02dcd2b2f87e`.
+- Power Automate Flow ID conservado como referencia: `4b93e1a2-c00d-4349-8829-02dcd2b2f87e`.
+- Trigger Workflow ID usado para validar la URL firmada: `48fa0ce604114962b3daa5dac9433b22`.
 - Token ficticio de Mentor A.
 - EmpresaID ficticios de Alfa (asignada) y Beta (no asignada).
 
@@ -35,4 +36,4 @@ Para validar solamente los contratos locales, sin red ni secretos:
 pwsh -NoProfile -File .\tests\e2e\run-v12-smoke-test.ps1 -ValidateContractOnly
 ```
 
-La URL se admite únicamente si usa HTTPS, pertenece a un host de Power Automate, contiene una firma, tiene una ruta de trigger manual y su Workflow ID coincide exactamente con `4b93e1a2-c00d-4349-8829-02dcd2b2f87e`. La comparación ocurre antes de crear el cliente HTTP o realizar solicitudes.
+La URL se admite únicamente si usa HTTPS, pertenece a un host de Power Automate, contiene una firma, tiene una ruta de trigger manual y el identificador incluido en `/workflows/{id}/triggers/manual/` coincide exactamente con el Trigger Workflow ID `48fa0ce604114962b3daa5dac9433b22`. El Power Automate Flow ID no se usa para validar esa ruta. La comparación ocurre antes de crear el cliente HTTP o realizar solicitudes.

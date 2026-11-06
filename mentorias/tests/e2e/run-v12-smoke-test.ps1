@@ -7,7 +7,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $mentorFlowName = 'SWC-MENTORIAS-V12-TEST'
 $adminFlowName = 'SWC-ADMIN-V12-TEST'
-$expectedWorkflowId = '4b93e1a2-c00d-4349-8829-02dcd2b2f87e'
+$powerAutomateFlowId = '4b93e1a2-c00d-4349-8829-02dcd2b2f87e'
+$expectedTriggerWorkflowId = '48fa0ce604114962b3daa5dac9433b22'
 $testSite = 'https://universidadeaneduco.sharepoint.com/sites/SWC-Mentorias-TEST'
 $results = [Collections.Generic.List[object]]::new()
 $createdBitacoraId = ''
@@ -25,7 +26,8 @@ function Get-FlowDefinition([string]$FlowName) {
 }
 
 function Assert-Contract {
-  if ($expectedWorkflowId -cnotmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') { throw 'El Workflow ID obligatorio configurado no es un GUID canónico.' }
+  if ($powerAutomateFlowId -cnotmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') { throw 'El Power Automate Flow ID configurado no es un GUID canónico.' }
+  if ($expectedTriggerWorkflowId -cnotmatch '^[0-9a-f]{32}$') { throw 'El Trigger Workflow ID configurado no contiene exactamente 32 caracteres hexadecimales.' }
   $mentor = Get-FlowDefinition $mentorFlowName
   $admin = Get-FlowDefinition $adminFlowName
   foreach ($entry in @(@{Name=$mentorFlowName;Definition=$mentor},@{Name=$adminFlowName;Definition=$admin})) {
@@ -57,13 +59,13 @@ function Read-Secret([string]$Prompt) {
 function Get-WorkflowIdentity([string]$Value) {
   try { $uri = [uri]$Value } catch { throw 'La URL firmada no es una URI válida.' }
   if ($uri.Scheme -cne 'https' -or -not [string]::IsNullOrEmpty($uri.UserInfo) -or -not [string]::IsNullOrEmpty($uri.Fragment)) { throw 'La URL firmada debe usar HTTPS y no incluir usuario ni fragmento.' }
-  $host = $uri.DnsSafeHost.ToLowerInvariant()
-  $allowedHost = $host.EndsWith('.logic.azure.com') -or $host.EndsWith('.environment.api.powerplatform.com') -or $host.EndsWith('.api.powerplatform.com') -or $host.EndsWith('.powerautomate.com')
+  $flowHost = $uri.DnsSafeHost.ToLowerInvariant()
+  $allowedHost = $flowHost.EndsWith('.logic.azure.com') -or $flowHost.EndsWith('.environment.api.powerplatform.com') -or $flowHost.EndsWith('.api.powerplatform.com') -or $flowHost.EndsWith('.powerautomate.com')
   if (-not $allowedHost) { throw 'El host no pertenece a un endpoint admitido de Power Automate.' }
   $match = [regex]::Match($uri.AbsolutePath,'(?i)/(?:automations/direct/)?workflows/([0-9a-f-]{32,36})/triggers/manual/paths/invoke')
   if (-not $match.Success) { throw 'La ruta no corresponde a un disparador manual de Power Automate.' }
   if ([string]::IsNullOrWhiteSpace($uri.Query) -or ($uri.Query -notmatch '(?i)(?:sig|signature)=')) { throw 'La URL no contiene una firma de invocación.' }
-  return [pscustomobject]@{Uri=$uri;Host=$host;WorkflowId=$match.Groups[1].Value.ToLowerInvariant()}
+  return [pscustomobject]@{Uri=$uri;Host=$flowHost;WorkflowId=$match.Groups[1].Value.ToLowerInvariant()}
 }
 
 function New-RandomBearer {
@@ -109,7 +111,7 @@ function Write-Report {
   $full = [IO.Path]::GetFullPath($ReportDirectory)
   if (-not (Test-Path -LiteralPath $full)) { New-Item -ItemType Directory -Path $full | Out-Null }
   $path = Join-Path $full ("V12-SMOKE-{0}.md" -f (Get-Date -Format 'yyyyMMdd-HHmmss'))
-  $lines = @('# Swisscontact Mentorías V1.2 — prueba real controlada','',"- Fecha local: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')","- Flujo esperado: $mentorFlowName","- Sitio contractual: $testSite",'- Secretos almacenados: no','- Escritura habilitada únicamente después de aprobar autorización positiva y negativa.','','| Prueba | Esperado | HTTP | Código | Resultado | Request/Run ID | Detalle seguro |','|---|---|---:|---|---|---|---|')
+  $lines = @('# Swisscontact Mentorías V1.2 — prueba real controlada','',"- Fecha local: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')","- Flujo esperado: $mentorFlowName","- Power Automate Flow ID: $powerAutomateFlowId","- Trigger Workflow ID esperado: $expectedTriggerWorkflowId","- Sitio contractual: $testSite",'- Secretos almacenados: no','- Escritura habilitada únicamente después de aprobar autorización positiva y negativa.','','| Prueba | Esperado | HTTP | Código | Resultado | Request/Run ID | Detalle seguro |','|---|---|---:|---|---|---|---|')
   $lines += @($results | ForEach-Object { "| $($_.Test) | $($_.Expected) | $($_.Http) | $($_.Code) | $($_.Outcome) | $($_.RequestId) | $($_.Detail) |" })
   if ($createdBitacoraId) { $lines += @('',("- Bitácora ficticia creada y recuperada: {0}" -f $createdBitacoraId)) }
   $lines += @('','> El informe no contiene URL firmada, token ni cuerpos completos de solicitud/respuesta.')
@@ -123,7 +125,7 @@ if ($ValidateContractOnly) { Write-Host 'Contrato local V1.2 válido para las ci
 try {
   $signedUrl = Read-Secret 'Pegue la URL firmada de SWC-MENTORIAS-V12-TEST'
   $identity = Get-WorkflowIdentity $signedUrl
-  if ($expectedWorkflowId -cne $identity.WorkflowId) { throw 'El Workflow ID de la URL no coincide exactamente con el flujo TEST confirmado.' }
+  if ($expectedTriggerWorkflowId -cne $identity.WorkflowId) { throw 'El Trigger Workflow ID de la URL no coincide exactamente con el disparador TEST confirmado.' }
   Write-Host "Destino validado: $($identity.Host) / workflow $($identity.WorkflowId) (firma oculta)"
   $client = [Net.Http.HttpClient]::new(); $client.Timeout = [TimeSpan]::FromSeconds(60)
 
