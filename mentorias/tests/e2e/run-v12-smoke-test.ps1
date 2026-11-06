@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $mentorFlowName = 'SWC-MENTORIAS-V12-TEST'
 $adminFlowName = 'SWC-ADMIN-V12-TEST'
+$expectedWorkflowId = '4b93e1a2-c00d-4349-8829-02dcd2b2f87e'
 $testSite = 'https://universidadeaneduco.sharepoint.com/sites/SWC-Mentorias-TEST'
 $results = [Collections.Generic.List[object]]::new()
 $createdBitacoraId = ''
@@ -24,6 +25,7 @@ function Get-FlowDefinition([string]$FlowName) {
 }
 
 function Assert-Contract {
+  if ($expectedWorkflowId -cnotmatch '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') { throw 'El Workflow ID obligatorio configurado no es un GUID canónico.' }
   $mentor = Get-FlowDefinition $mentorFlowName
   $admin = Get-FlowDefinition $adminFlowName
   foreach ($entry in @(@{Name=$mentorFlowName;Definition=$mentor},@{Name=$adminFlowName;Definition=$admin})) {
@@ -121,7 +123,6 @@ if ($ValidateContractOnly) { Write-Host 'Contrato local V1.2 válido para las ci
 try {
   $signedUrl = Read-Secret 'Pegue la URL firmada de SWC-MENTORIAS-V12-TEST'
   $identity = Get-WorkflowIdentity $signedUrl
-  $expectedWorkflowId = (Read-Host 'ID interno (GUID) mostrado en Detalles del flujo SWC-MENTORIAS-V12-TEST').Trim().ToLowerInvariant()
   if ($expectedWorkflowId -cne $identity.WorkflowId) { throw 'El Workflow ID de la URL no coincide exactamente con el flujo TEST confirmado.' }
   Write-Host "Destino validado: $($identity.Host) / workflow $($identity.WorkflowId) (firma oculta)"
   $client = [Net.Http.HttpClient]::new(); $client.Timeout = [TimeSpan]::FromSeconds(60)
