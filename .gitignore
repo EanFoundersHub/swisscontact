@@ -33,3 +33,6 @@ Thumbs.db
 # OAuth/CORS test output (may contain tenant-specific metadata)
 mentorias/oauth-test/results/
 mentorias/oauth-test/*.local.json
+
+# Local E2E execution reports (run identifiers and TEST record IDs)
+mentorias/reports/e2e/
