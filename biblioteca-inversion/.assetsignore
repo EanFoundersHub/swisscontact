@@ -1,0 +1,6 @@
+worker/
+tools/
+secrets/
+wrangler.jsonc
+.assetsignore
+README-CLOUDFLARE.md
