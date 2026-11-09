@@ -2,6 +2,8 @@
 
 La biblioteca debe desplegarse como un **Cloudflare Worker con Static Assets**. GitHub Pages no puede ser el origen de producción porque su URL pública permitiría saltarse el inicio de sesión.
 
+URL protegida de producción: <https://swisscontact-biblioteca-inversion.afcaballero.workers.dev>
+
 ## Preparar los secretos
 
 Desde `biblioteca-inversion`:

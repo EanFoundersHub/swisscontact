@@ -4,3 +4,5 @@ secrets/
 wrangler.jsonc
 .assetsignore
 README-CLOUDFLARE.md
+.wrangler/
+.wrangler-dry-run/
