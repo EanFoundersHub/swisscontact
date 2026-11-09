@@ -1,0 +1,7 @@
+{
+  "endpoint": "REPLACE_WITH_ISOLATED_TEST_FLOW_URL",
+  "origin": "https://REPLACE_WITH_GITHUB_ORG.github.io",
+  "body": {
+    "operation": "identidadOAuthTest"
+  }
+}

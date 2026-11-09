@@ -1,0 +1,38 @@
+# Dependencies and generated local state
+node_modules/
+.cache/
+coverage/
+
+# Secrets and environment-specific configuration
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+secrets/
+credentials/
+tokens/
+cookies/
+mentorias/config.local.js
+mentorias/msal.config.js
+
+# Certificates and private keys
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Editor and OS state
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.user
+*.suo
+
+# OAuth/CORS test output (may contain tenant-specific metadata)
+mentorias/oauth-test/results/
+mentorias/oauth-test/*.local.json
+
+# Local E2E execution reports (run identifiers and TEST record IDs)
+mentorias/reports/e2e/

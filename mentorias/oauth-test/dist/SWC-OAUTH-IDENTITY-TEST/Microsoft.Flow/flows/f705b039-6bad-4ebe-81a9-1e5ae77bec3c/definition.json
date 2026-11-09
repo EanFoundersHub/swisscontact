@@ -1,0 +1,136 @@
+{
+  "name": "4f497cb9-aece-4b1b-8132-18939750c9e4",
+  "id": "/providers/Microsoft.Flow/flows/4f497cb9-aece-4b1b-8132-18939750c9e4",
+  "type": "Microsoft.Flow/flows",
+  "properties": {
+    "apiId": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+    "displayName": "SWC-OAUTH-IDENTITY-TEST",
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "type": "Request",
+          "kind": "Http",
+          "metadata": {
+            "swcSafetyGate": "IMPORT_DISABLED_THEN_SET_ONE_SPECIFIC_TEST_USER",
+            "swcPurpose": "OID_AND_CORS_EXPERIMENT_ONLY"
+          },
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "identidadOAuthTest"
+                  ]
+                },
+                "claimedOid": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "nonce": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "operation"
+              ],
+              "additionalProperties": false
+            },
+            "triggerAuthenticationType": "Tenant"
+          },
+          "runtimeConfiguration": {
+            "secureData": {
+              "properties": [
+                "inputs",
+                "outputs"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Propiedades_de_identidad_observadas": {
+          "type": "Compose",
+          "runAfter": {},
+          "inputs": {
+            "authorizationPresent": "@not(empty(triggerOutputs()?['headers']?['Authorization']))",
+            "platformCandidates": {
+              "xMsClientPrincipalId": "@coalesce(triggerOutputs()?['headers']?['x-ms-client-principal-id'], triggerOutputs()?['headers']?['X-MS-CLIENT-PRINCIPAL-ID'])",
+              "xMsClientPrincipalName": "@coalesce(triggerOutputs()?['headers']?['x-ms-client-principal-name'], triggerOutputs()?['headers']?['X-MS-CLIENT-PRINCIPAL-NAME'])",
+              "xMsUserId": "@coalesce(triggerOutputs()?['headers']?['x-ms-user-id'], triggerOutputs()?['headers']?['X-MS-USER-ID'])",
+              "xMsUserName": "@coalesce(triggerOutputs()?['headers']?['x-ms-user-name'], triggerOutputs()?['headers']?['X-MS-USER-NAME'])"
+            },
+            "untrustedEchoes": {
+              "customIdentityHeader": "@triggerOutputs()?['headers']?['x-swc-authenticated-user']",
+              "bodyClaimedOid": "@triggerBody()?['claimedOid']"
+            },
+            "triggerMetadata": {
+              "workflowRunId": "@workflow()?['run']?['name']",
+              "triggerName": "manual",
+              "operation": "@triggerBody()?['operation']"
+            }
+          },
+          "runtimeConfiguration": {
+            "secureData": {
+              "properties": [
+                "inputs",
+                "outputs"
+              ]
+            }
+          }
+        },
+        "Responder_sin_token_ni_headers_completos": {
+          "type": "Response",
+          "kind": "Http",
+          "runAfter": {
+            "Propiedades_de_identidad_observadas": [
+              "Succeeded"
+            ]
+          },
+          "inputs": {
+            "statusCode": 200,
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "ok": true,
+              "experiment": "SWC-OAUTH-IDENTITY-TEST",
+              "warning": "Los ecos enviados por el cliente son NO CONFIABLES. Un candidato de plataforma solo será confiable si la prueba demuestra que no puede suplantarse.",
+              "observations": "@outputs('Propiedades_de_identidad_observadas')"
+            }
+          },
+          "runtimeConfiguration": {
+            "secureData": {
+              "properties": [
+                "inputs",
+                "outputs"
+              ]
+            }
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "connectionReferences": {},
+    "flowFailureAlertSubscribed": false,
+    "isManaged": false
+  }
+}
