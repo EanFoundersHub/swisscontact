@@ -4,7 +4,7 @@ node_modules/
 coverage/
 __pycache__/
 .wrangler/
-.wrangler-dry-run/
+.wrangler-dry-run*/
 
 # Secrets and environment-specific configuration
 .env
