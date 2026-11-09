@@ -76,7 +76,15 @@ function htmlResponse(html, status = 200) {
 
 async function login(request, env) {
   const origin = request.headers.get("Origin");
-  if (origin && origin !== new URL(request.url).origin) return new Response("Forbidden", { status: 403 });
+  const fetchSite = request.headers.get("Sec-Fetch-Site");
+  if (fetchSite === "cross-site") return new Response("Forbidden", { status: 403 });
+  if (origin && origin !== "null") {
+    try {
+      if (new URL(origin).hostname !== new URL(request.url).hostname) return new Response("Forbidden", { status: 403 });
+    } catch {
+      return new Response("Forbidden", { status: 403 });
+    }
+  }
 
   const clientKey = request.headers.get("CF-Connecting-IP") || "unknown";
   if (env.LOGIN_RATE_LIMITER) {
