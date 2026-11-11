@@ -150,7 +150,7 @@ async function main() {
     assert.equal(initial.deliverables, true);
     assert.equal(initial.noData, 0);
     assert.equal(initial.pct, '47%');
-    assert.equal(initial.completeText, '63 de 135 entregas completas');
+    assert.equal(initial.completeText, '64 de 135 entregas completas');
     assert.equal(initial.routeLocked, true);
 
     const filtered = await evaluate(`(()=>{q.value='PLÁSTICOS AMBIENTALES SAS';docf.value='2';docs.value='partial';render();return {count:viewCount.textContent.trim(),partial:content.textContent.includes('Parcial'),company:content.textContent.includes('PLÁSTICOS AMBIENTALES SAS'),pct:document.querySelector('.kpi-main b').textContent.trim()}})()`);

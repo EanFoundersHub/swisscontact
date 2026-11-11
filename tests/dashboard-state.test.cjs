@@ -24,7 +24,7 @@ const assertions = String.raw`
 assert.equal(companies.length, 27, 'El tablero debe conservar las 27 empresas activas');
 assert.equal(Object.keys(DIAGNOSTIC_REPORTS).length, 27, 'Cada empresa debe tener ruta de diagnóstico');
 assert.equal(Object.keys(ACTION_PLANS).length, 13, 'Deben conservarse los 13 planes disponibles');
-assert.equal(Object.keys(COMMITMENT_LETTERS).length, 24, 'Deben conservarse 22 cartas y 2 confirmaciones sin archivo');
+assert.equal(Object.keys(COMMITMENT_LETTERS).length, 25, 'Deben conservarse 23 cartas y 2 confirmaciones sin archivo');
 assert.equal(LOCKED_STAGES.size, 8, 'Solo la Etapa 0 debe estar habilitada');
 assert.equal(DB_NAME, 'swisscontact_mel_inicial_v10');
 assert.equal(STORE, 'docs');
@@ -44,7 +44,7 @@ assert.equal(confirmedLetter.source, 'confirmed', 'La carta confirmada debe dist
 
 const stats = stageStats('s0', companies);
 assert.equal(stats.expected, 135);
-assert.equal(stats.done, 63);
+assert.equal(stats.done, 64);
 assert.equal(stats.full, 0);
 assert.equal(stats.per[2].complete, 12);
 assert.equal(stats.per[2].partial, 1);
