@@ -49,8 +49,8 @@ assert.equal(stats.full, 0);
 assert.equal(stats.per[2].complete, 12);
 assert.equal(stats.per[2].partial, 1);
 assert.equal(stats.per[2].pending, 14);
-assert.equal(stats.per[4].complete, 24);
-assert.equal(stats.per[4].pending, 3);
+assert.equal(stats.per[4].complete, 25);
+assert.equal(stats.per[4].pending, 2);
 assert.equal(stats.local, 1, 'El indicador debe avisar cuando intervienen datos de IndexedDB');
 assert.equal(stats.pct, 47);
 
