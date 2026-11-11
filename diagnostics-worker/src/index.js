@@ -7,6 +7,7 @@ const SECURITY_HEADERS = {
 };
 
 const encoder = new TextEncoder();
+const LANDING_URL = 'https://eanfoundershub.github.io/swisscontact/';
 
 function base64Url(bytes) {
   let binary = '';
@@ -69,7 +70,30 @@ async function readSession(request, env) {
 }
 
 function safeRedirect(value) {
-  return typeof value === 'string' && value.startsWith('/reports/') && !value.startsWith('//') ? value : '/';
+  if (typeof value !== 'string' || value.startsWith('//')) return '/auth/start';
+  if (value.startsWith('/reports/') || value === '/auth/start') return value;
+  return '/auth/start';
+}
+
+async function createLandingGrant(email, env) {
+  const payload = base64Url(encoder.encode(JSON.stringify({ email, typ: 'landing', exp: Math.floor(Date.now() / 1000) + 90 })));
+  return `${payload}.${await hmac(payload, env.SESSION_SECRET)}`;
+}
+
+async function verifyLandingGrant(token, env) {
+  const [payload, signature, extra] = String(token || '').split('.');
+  if (!payload || !signature || extra || !env.SESSION_SECRET) return null;
+  if (!(await sameSecret(signature, await hmac(payload, env.SESSION_SECRET)))) return null;
+  try {
+    const data = JSON.parse(new TextDecoder().decode(fromBase64Url(payload)));
+    if (data.typ !== 'landing' || data.exp <= Math.floor(Date.now() / 1000) || !allowedEmails(env).includes(String(data.email || '').toLowerCase())) return null;
+    return data;
+  } catch { return null; }
+}
+
+function corsHeaders(request) {
+  const origin = request.headers.get('Origin');
+  return origin === new URL(LANDING_URL).origin ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Vary': 'Origin', 'Cache-Control': 'no-store' } : { 'Cache-Control': 'no-store' };
 }
 
 function html(value, status = 200, extraHeaders = {}) {
@@ -102,7 +126,20 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/auth/login') return handleLogin(request, env, url);
-    if (url.pathname === '/auth/logout') return new Response(null, { status: 303, headers: { Location: '/auth/login', 'Set-Cookie': 'swc_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax', ...SECURITY_HEADERS } });
+    if (url.pathname === '/auth/start') {
+      const session = await readSession(request, env);
+      if (!session) return new Response(null, { status: 302, headers: { Location: '/auth/login?redirect=%2Fauth%2Fstart', ...SECURITY_HEADERS } });
+      const grant = await createLandingGrant(session.email, env);
+      return new Response(null, { status: 303, headers: { Location: `${LANDING_URL}#swc_grant=${encodeURIComponent(grant)}`, ...SECURITY_HEADERS } });
+    }
+    if (url.pathname === '/auth/verify') {
+      const headers = corsHeaders(request);
+      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+      if (request.method !== 'GET') return new Response('Método no permitido', { status: 405, headers });
+      const grant = await verifyLandingGrant(url.searchParams.get('token'), env);
+      return new Response(JSON.stringify({ authorized: Boolean(grant) }), { status: grant ? 200 : 401, headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8' } });
+    }
+    if (url.pathname === '/auth/logout') return new Response(null, { status: 303, headers: { Location: LANDING_URL, 'Set-Cookie': 'swc_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax', ...SECURITY_HEADERS } });
     if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Método no permitido', { status: 405 });
     if (!url.pathname.startsWith('/reports/')) return new Response('No encontrado', { status: 404 });
 
