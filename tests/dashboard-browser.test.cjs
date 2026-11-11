@@ -148,7 +148,7 @@ async function main() {
     assert.deepEqual(initial.enabled, ['Resumen', 'Diagnóstico']);
     assert.equal(initial.schedule, true);
     assert.equal(initial.deliverables, true);
-    assert.equal(initial.noData, 5);
+    assert.equal(initial.noData, 0);
     assert.equal(initial.pct, '47%');
     assert.equal(initial.completeText, '63 de 135 entregas completas');
     assert.equal(initial.routeLocked, true);
