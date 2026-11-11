@@ -14,9 +14,16 @@ const outputDir = resolve(outputDirArg);
 const chrome = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const template = readFileSync(sourceHtml, 'utf8');
 const marker = 'void iniciar();';
+const reportCss = [...template.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi)]
+  .map(match => match[1])
+  .filter(css => css.includes('--brand'))
+  .join('\n');
 
 if (!template.includes(marker)) {
   throw new Error(`No se encontró el punto de inicialización esperado en ${sourceHtml}`);
+}
+if (!reportCss) {
+  throw new Error(`No se encontró el CSS del informe en ${sourceHtml}`);
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -57,7 +64,11 @@ for (const { envelope, state } of states.sort((a, b) => a.envelope.empresa.local
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     '--virtual-time-budget=2500', '--dump-dom', `file:///${temporary.replace(/\\/g, '/')}`
   ], { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 });
-  writeFileSync(target, rendered, 'utf8');
+  const styled = rendered.replace(/<style>\s*<\/style>/i, `<style>${reportCss}</style>`);
+  if (styled === rendered) {
+    throw new Error(`El informe generado no contiene el marcador de estilos esperado: ${targetName}`);
+  }
+  writeFileSync(target, styled, 'utf8');
   rmSync(temporary, { force: true });
   manifest.push({
     empresa: envelope.empresa,
