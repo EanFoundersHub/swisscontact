@@ -64,12 +64,12 @@ export default {
     if (!identity || !email || !allowedEmails.includes(email)) return new Response('Acceso no autorizado', { status: 401 });
 
     const key = decodeURIComponent(url.pathname.slice('/reports/'.length));
-    if (!/^[a-z0-9-]+\.html$/.test(key)) return new Response('Ruta inválida', { status: 400 });
+    if (!/^[a-z0-9-]+\.(html|pdf)$/.test(key)) return new Response('Ruta inválida', { status: 400 });
     const object = await env.REPORTS.get(key);
     if (!object) return new Response('Informe no encontrado', { status: 404 });
 
     const headers = new Headers(SECURITY_HEADERS);
-    headers.set('Content-Type', 'text/html; charset=utf-8');
+    headers.set('Content-Type', key.endsWith('.pdf') ? 'application/pdf' : 'text/html; charset=utf-8');
     headers.set('Content-Disposition', `inline; filename="${key}"`);
     if (object.httpEtag) headers.set('ETag', object.httpEtag);
     return new Response(request.method === 'HEAD' ? null : object.body, { headers });
