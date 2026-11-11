@@ -16,7 +16,12 @@ Los informes contienen NIT, respuestas y cifras financieras. No deben copiarse a
 2. Copiar `wrangler.example.jsonc` a `wrangler.jsonc` y sustituir dominio y zona.
 3. Desplegar el Worker y crear una aplicación de Cloudflare Access sobre `diagnosticos.<dominio>/*`.
 4. Copiar al `wrangler.jsonc` el dominio del equipo de Access y el AUD de la aplicación. El Worker valida firma, emisor, audiencia y expiración del JWT.
-5. Autorizar las cuentas institucionales de Paula, Lorenzo y las demás personas aprobadas. No usar números celulares como contraseña compartida.
+5. Autorizar exclusivamente estos correos mediante código temporal por correo:
+   - `paula.osorio@swisscontact.org`
+   - `lorenzo.ortiz@swisscontact.org`
+   - `afcaballero@universidadean.edu.co`
+   - `lapacely@universidadean.edu.co`
+   El Worker vuelve a comprobar esta lista después de validar el JWT de Access.
 6. Subir solo los informes finales. Los borradores pueden cargarse únicamente si se necesita revisión y deben estar identificados como tales.
 7. Establecer la URL del Worker en `diagnostics-config.js` y publicar el dashboard.
 

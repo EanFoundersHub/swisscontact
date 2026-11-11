@@ -7,7 +7,8 @@
   "preview_urls": false,
   "vars": {
     "CF_ACCESS_TEAM_DOMAIN": "equipo.cloudflareaccess.com",
-    "CF_ACCESS_AUD": "REEMPLAZAR_CON_AUD_DE_LA_APLICACION_ACCESS"
+    "CF_ACCESS_AUD": "REEMPLAZAR_CON_AUD_DE_LA_APLICACION_ACCESS",
+    "ALLOWED_EMAILS": "paula.osorio@swisscontact.org,lorenzo.ortiz@swisscontact.org,afcaballero@universidadean.edu.co,lapacely@universidadean.edu.co"
   },
   "r2_buckets": [
     { "binding": "REPORTS", "bucket_name": "swisscontact-diagnosticos" }
