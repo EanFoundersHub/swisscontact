@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "swisscontact-diagnosticos",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "CF_ACCESS_TEAM_DOMAIN": "equipo.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "REEMPLAZAR_CON_AUD_DE_LA_APLICACION_ACCESS"
+  },
+  "r2_buckets": [
+    { "binding": "REPORTS", "bucket_name": "swisscontact-diagnosticos" }
+  ],
+  "routes": [
+    { "pattern": "diagnosticos.example.org/*", "zone_name": "example.org" }
+  ]
+}
