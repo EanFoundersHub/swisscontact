@@ -106,6 +106,13 @@ function loginPage(redirect, error = '') {
   :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0d10;color:#f4f6f8;font-family:Inter,system-ui,sans-serif}.card{width:min(92vw,430px);padding:34px;border:1px solid #30343a;border-radius:16px;background:#15181c;box-shadow:0 24px 70px #0008}.brand{font-size:14px;color:#aab2bd;margin-bottom:28px}h1{font-size:26px;margin:0 0 8px}.sub{color:#aab2bd;line-height:1.45;margin-bottom:24px}label{display:block;font-size:14px;font-weight:700;margin:15px 0 7px}input{width:100%;padding:13px 14px;border:1px solid #3a4048;border-radius:10px;background:#0f1215;color:#fff;font-size:16px;outline:none}input:focus{border-color:#e33b35;box-shadow:0 0 0 3px #e33b3525}button{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;background:#e33b35;color:#fff;font-size:16px;font-weight:800;cursor:pointer}.error{margin:0 0 18px;padding:11px 12px;border-radius:9px;background:#5b1d1d;color:#ffd8d8;font-size:14px}.foot{margin-top:18px;color:#7f8995;font-size:12px;text-align:center}</style></head><body><main class="card"><div class="brand">Swisscontact · EAN Impacta</div><h1>Ingreso seguro</h1><div class="sub">Usa tu correo autorizado y la clave del programa.</div>${message}<form method="post" action="/auth/login"><input type="hidden" name="redirect" value="${redirect.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"><label for="email">Correo electrónico</label><input id="email" name="email" type="email" autocomplete="username" required autofocus><label for="password">Clave</label><input id="password" name="password" type="password" autocomplete="current-password" required><button type="submit">Ingresar</button></form><div class="foot">Acceso exclusivo para usuarios autorizados</div></main></body></html>`;
 }
 
+function landingRedirectPage(grant) {
+  const destination = `${LANDING_URL}#swc_grant=${encodeURIComponent(grant)}`;
+  const escapedDestination = destination.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=${escapedDestination}"><title>Abriendo el tablero · Swisscontact</title><style>
+  :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0d10;color:#f4f6f8;font-family:Inter,system-ui,sans-serif}.card{width:min(92vw,430px);padding:34px;border:1px solid #30343a;border-radius:16px;background:#15181c;text-align:center;box-shadow:0 24px 70px #0008}h1{font-size:24px;margin:0 0 10px}p{color:#aab2bd;line-height:1.5;margin:0 0 22px}a{display:inline-block;padding:12px 18px;border-radius:10px;background:#e33b35;color:#fff;font-weight:800;text-decoration:none}</style></head><body><main class="card"><h1>Acceso confirmado</h1><p>Estamos abriendo el tablero de seguimiento.</p><a href="${escapedDestination}">Continuar al tablero</a></main></body></html>`;
+}
+
 async function handleLogin(request, env, url) {
   if (request.method === 'GET') return html(loginPage(safeRedirect(url.searchParams.get('redirect'))));
   if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
@@ -130,7 +137,7 @@ export default {
       const session = await readSession(request, env);
       if (!session) return new Response(null, { status: 302, headers: { Location: '/auth/login?redirect=%2Fauth%2Fstart', ...SECURITY_HEADERS } });
       const grant = await createLandingGrant(session.email, env);
-      return new Response(null, { status: 303, headers: { Location: `${LANDING_URL}#swc_grant=${encodeURIComponent(grant)}`, ...SECURITY_HEADERS } });
+      return html(landingRedirectPage(grant));
     }
     if (url.pathname === '/auth/verify') {
       const headers = corsHeaders(request);
