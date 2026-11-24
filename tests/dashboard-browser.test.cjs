@@ -149,24 +149,25 @@ async function main() {
     assert.equal(initial.schedule, true);
     assert.equal(initial.deliverables, true);
     assert.equal(initial.noData, 0);
-    assert.equal(initial.pct, '47%');
-    assert.equal(initial.completeText, '64 de 135 entregas completas');
+    assert.equal(initial.pct, '68%');
+    assert.equal(initial.completeText, '73 de 108 entregas completas');
     assert.equal(initial.routeLocked, true);
 
-    const filtered = await evaluate(`(()=>{q.value='PLÁSTICOS AMBIENTALES SAS';docf.value='2';docs.value='partial';render();return {count:viewCount.textContent.trim(),partial:content.textContent.includes('Parcial'),company:content.textContent.includes('PLÁSTICOS AMBIENTALES SAS'),pct:document.querySelector('.kpi-main b').textContent.trim()}})()`);
+    const filtered = await evaluate(`(()=>{q.value='PLÁSTICOS AMBIENTALES SAS';docf.value='1';docs.value='partial';render();return {count:viewCount.textContent.trim(),partial:content.textContent.includes('Parcial'),company:content.textContent.includes('PLÁSTICOS AMBIENTALES SAS'),pct:document.querySelector('.kpi-main b').textContent.trim()}})()`);
     assert.equal(filtered.partial, true);
     assert.equal(filtered.company, true);
     assert.match(filtered.count, /^1 de 27/);
-    assert.equal(filtered.pct, '40%');
+    assert.equal(filtered.pct, '75%');
 
-    const detail = await evaluate(`(()=>{goDetail('s0',2);return {q:q.value,docf:docf.value,docs:docs.value,active:document.querySelector('.tab.active .tl').textContent,rows:document.querySelectorAll('#stageTable tbody tr').length,partial:content.textContent.includes('Plan parcial disponible')}})()`);
-    assert.deepEqual(detail, { q: 'PLÁSTICOS AMBIENTALES SAS', docf: '2', docs: 'partial', active: 'Diagnóstico', rows: 1, partial: true });
+    const detail = await evaluate(`(()=>{goDetail('s0',1);return {q:q.value,docf:docf.value,docs:docs.value,active:document.querySelector('.tab.active .tl').textContent,rows:document.querySelectorAll('#stageTable tbody tr').length,partial:content.textContent.includes('Plan parcial disponible')}})()`);
+    assert.deepEqual(detail, { q: 'PLÁSTICOS AMBIENTALES SAS', docf: '1', docs: 'partial', active: 'Diagnóstico', rows: 1, partial: true });
 
-    const localPartial = await evaluate(`(async()=>{await putDoc({key:key('IR-010','s0',2),company:'IR-010',stage:'s0',doc:2,name:'cierre-sin-validar.pdf',type:'application/pdf',size:1,updated:new Date().toISOString(),blob:new Blob(['x'])});await refreshDocs();render();const x=docInfo('IR-010','s0',2);return {status:x.status,source:x.source,notice:content.textContent.includes('sigue parcial hasta acreditar el cierre'),scope:document.body.textContent.includes('Datos guardados en este navegador')}})()`);
+    const localPartial = await evaluate(`(async()=>{await putDoc({key:key('IR-010','s0',1),company:'IR-010',stage:'s0',doc:1,name:'cierre-sin-validar.pdf',type:'application/pdf',size:1,updated:new Date().toISOString(),blob:new Blob(['x'])});await refreshDocs();render();const x=docInfo('IR-010','s0',1);return {status:x.status,source:x.source,notice:content.textContent.includes('sigue parcial hasta acreditar el cierre'),scope:document.body.textContent.includes('Datos guardados en este navegador')}})()`);
     assert.deepEqual(localPartial, { status: 'partial', source: 'local', notice: true, scope: true });
 
-    const routes = await evaluate(`(()=>{window.__opened='';window.open=(url)=>{window.__opened=url};openActionPlan('IR-010');const plan=window.__opened;window.__opened='';openCommitmentLetter('IR-015');return {plan,confirmedOpened:window.__opened,confirmed:docInfo('IR-015','s0',4).source}})()`);
+    const routes = await evaluate(`(()=>{window.__opened='';window.open=(url)=>{window.__opened=url};openActionPlan('IR-010');const plan=window.__opened;window.__opened='';openDataRoom('IR-014');const dataRoom=window.__opened;window.__opened='';openCommitmentLetter('IR-015');return {plan,dataRoom,confirmedOpened:window.__opened,confirmed:docInfo('IR-015','s0',3).source}})()`);
     assert.match(routes.plan, /\/reports\/plan-accion-plasticos-ambientales-parcial\.pdf$/);
+    assert.match(routes.dataRoom, /\/reports\/data-room-papeles-el-tunal\.xlsx$/);
     assert.equal(routes.confirmedOpened, '');
     assert.equal(routes.confirmed, 'confirmed');
 
@@ -197,6 +198,7 @@ async function main() {
       new Promise((resolve) => chrome.once('exit', resolve)),
       new Promise((resolve) => setTimeout(resolve, 2000)),
     ]);
+    if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
     const tempRoot = path.resolve(os.tmpdir()) + path.sep;
     if (!path.resolve(profile).startsWith(tempRoot)) throw new Error('Ruta temporal inesperada; se omite la limpieza');

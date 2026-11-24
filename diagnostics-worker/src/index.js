@@ -157,13 +157,14 @@ export default {
     }
 
     const key = decodeURIComponent(url.pathname.slice('/reports/'.length));
-    if (!/^[a-z0-9-]+\.(html|pdf)$/.test(key)) return new Response('Ruta inválida', { status: 400 });
+    if (!/^[a-z0-9-]+\.(html|pdf|xlsx)$/.test(key)) return new Response('Ruta inválida', { status: 400 });
     const object = await env.REPORTS.get(key);
     if (!object) return new Response('Informe no encontrado', { status: 404 });
 
     const headers = new Headers(SECURITY_HEADERS);
-    headers.set('Content-Type', key.endsWith('.pdf') ? 'application/pdf' : 'text/html; charset=utf-8');
-    headers.set('Content-Disposition', `inline; filename="${key}"`);
+    const isSpreadsheet = key.endsWith('.xlsx');
+    headers.set('Content-Type', key.endsWith('.pdf') ? 'application/pdf' : isSpreadsheet ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/html; charset=utf-8');
+    headers.set('Content-Disposition', `${isSpreadsheet ? 'attachment' : 'inline'}; filename="${key}"`);
     if (key.endsWith('.pdf')) headers.set('Content-Security-Policy', "default-src 'self' blob:; object-src 'self' blob:; frame-ancestors 'none'");
     if (object.httpEtag) headers.set('ETag', object.httpEtag);
     return new Response(request.method === 'HEAD' ? null : object.body, { headers });
