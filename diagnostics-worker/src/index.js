@@ -71,7 +71,7 @@ async function readSession(request, env) {
 
 function safeRedirect(value) {
   if (typeof value !== 'string' || value.startsWith('//')) return '/auth/start';
-  if (value.startsWith('/reports/') || value === '/auth/start') return value;
+  if (value.startsWith('/reports/') || value.startsWith('/downloads/') || value === '/auth/start') return value;
   return '/auth/start';
 }
 
@@ -148,7 +148,9 @@ export default {
     }
     if (url.pathname === '/auth/logout') return new Response(null, { status: 303, headers: { Location: LANDING_URL, 'Set-Cookie': 'swc_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax', ...SECURITY_HEADERS } });
     if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Método no permitido', { status: 405 });
-    if (!url.pathname.startsWith('/reports/')) return new Response('No encontrado', { status: 404 });
+    const isReport = url.pathname.startsWith('/reports/');
+    const isDownload = url.pathname.startsWith('/downloads/');
+    if (!isReport && !isDownload) return new Response('No encontrado', { status: 404 });
 
     const session = await readSession(request, env);
     if (!session) {
@@ -156,15 +158,17 @@ export default {
       return new Response(null, { status: 302, headers: { Location: `/auth/login?redirect=${redirect}`, ...SECURITY_HEADERS } });
     }
 
-    const key = decodeURIComponent(url.pathname.slice('/reports/'.length));
-    if (!/^[a-z0-9-]+\.(html|pdf|xlsx)$/.test(key)) return new Response('Ruta inválida', { status: 400 });
+    const prefix = isDownload ? '/downloads/' : '/reports/';
+    const key = decodeURIComponent(url.pathname.slice(prefix.length));
+    if (!/^[a-z0-9-]+\.(html|pdf|docx|xlsx)$/.test(key)) return new Response('Ruta inválida', { status: 400 });
     const object = await env.REPORTS.get(key);
     if (!object) return new Response('Informe no encontrado', { status: 404 });
 
     const headers = new Headers(SECURITY_HEADERS);
     const isSpreadsheet = key.endsWith('.xlsx');
-    headers.set('Content-Type', key.endsWith('.pdf') ? 'application/pdf' : isSpreadsheet ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/html; charset=utf-8');
-    headers.set('Content-Disposition', `${isSpreadsheet ? 'attachment' : 'inline'}; filename="${key}"`);
+    const isWord = key.endsWith('.docx');
+    headers.set('Content-Type', key.endsWith('.pdf') ? 'application/pdf' : isSpreadsheet ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : isWord ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/html; charset=utf-8');
+    headers.set('Content-Disposition', `${isDownload || isSpreadsheet || isWord ? 'attachment' : 'inline'}; filename="${key}"`);
     if (key.endsWith('.pdf')) headers.set('Content-Security-Policy', "default-src 'self' blob:; object-src 'self' blob:; frame-ancestors 'none'");
     if (object.httpEtag) headers.set('ETag', object.httpEtag);
     return new Response(request.method === 'HEAD' ? null : object.body, { headers });

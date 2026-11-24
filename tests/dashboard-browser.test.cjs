@@ -149,27 +149,29 @@ async function main() {
     assert.equal(initial.schedule, true);
     assert.equal(initial.deliverables, true);
     assert.equal(initial.noData, 0);
-    assert.equal(initial.pct, '68%');
-    assert.equal(initial.completeText, '73 de 108 entregas completas');
+    assert.equal(initial.pct, '78%');
+    assert.equal(initial.completeText, '84 de 108 entregas completas');
     assert.equal(initial.routeLocked, true);
 
-    const filtered = await evaluate(`(()=>{q.value='PLÁSTICOS AMBIENTALES SAS';docf.value='1';docs.value='partial';render();return {count:viewCount.textContent.trim(),partial:content.textContent.includes('Parcial'),company:content.textContent.includes('PLÁSTICOS AMBIENTALES SAS'),pct:document.querySelector('.kpi-main b').textContent.trim()}})()`);
-    assert.equal(filtered.partial, true);
+    const filtered = await evaluate(`(()=>{q.value='ROLLOS COLOMBIA SAS';docf.value='1';docs.value='pending';render();return {count:viewCount.textContent.trim(),pending:content.textContent.includes('Pendiente'),company:content.textContent.includes('ROLLOS COLOMBIA SAS'),pct:document.querySelector('.kpi-main b').textContent.trim()}})()`);
+    assert.equal(filtered.pending, true);
     assert.equal(filtered.company, true);
     assert.match(filtered.count, /^1 de 27/);
-    assert.equal(filtered.pct, '75%');
+    assert.equal(filtered.pct, '50%');
 
-    const detail = await evaluate(`(()=>{goDetail('s0',1);return {q:q.value,docf:docf.value,docs:docs.value,active:document.querySelector('.tab.active .tl').textContent,rows:document.querySelectorAll('#stageTable tbody tr').length,partial:content.textContent.includes('Plan parcial disponible')}})()`);
-    assert.deepEqual(detail, { q: 'PLÁSTICOS AMBIENTALES SAS', docf: '1', docs: 'partial', active: 'Diagnóstico', rows: 1, partial: true });
+    const detail = await evaluate(`(()=>{goDetail('s0',1);return {q:q.value,docf:docf.value,docs:docs.value,active:document.querySelector('.tab.active .tl').textContent,rows:document.querySelectorAll('#stageTable tbody tr').length,pending:content.textContent.includes('Pendiente')}})()`);
+    assert.deepEqual(detail, { q: 'ROLLOS COLOMBIA SAS', docf: '1', docs: 'pending', active: 'Diagnóstico', rows: 1, pending: true });
 
-    const localPartial = await evaluate(`(async()=>{await putDoc({key:key('IR-010','s0',1),company:'IR-010',stage:'s0',doc:1,name:'cierre-sin-validar.pdf',type:'application/pdf',size:1,updated:new Date().toISOString(),blob:new Blob(['x'])});await refreshDocs();render();const x=docInfo('IR-010','s0',1);return {status:x.status,source:x.source,notice:content.textContent.includes('sigue parcial hasta acreditar el cierre'),scope:document.body.textContent.includes('Datos guardados en este navegador')}})()`);
-    assert.deepEqual(localPartial, { status: 'partial', source: 'local', notice: true, scope: true });
+    const managedPlan = await evaluate(`(async()=>{await putDoc({key:key('IR-001','s0',1),company:'IR-001',stage:'s0',doc:1,name:'plan-anterior.pdf',type:'application/pdf',size:1,updated:new Date().toISOString(),blob:new Blob(['x'])});await refreshDocs();render();const x=docInfo('IR-001','s0',1);return {status:x.status,source:x.source}})()`);
+    assert.deepEqual(managedPlan, { status: 'pending', source: null });
 
-    const routes = await evaluate(`(()=>{window.__opened='';window.open=(url)=>{window.__opened=url};openActionPlan('IR-010');const plan=window.__opened;window.__opened='';openDataRoom('IR-014');const dataRoom=window.__opened;window.__opened='';openCommitmentLetter('IR-015');return {plan,dataRoom,confirmedOpened:window.__opened,confirmed:docInfo('IR-015','s0',3).source}})()`);
-    assert.match(routes.plan, /\/reports\/plan-accion-plasticos-ambientales-parcial\.pdf$/);
+    const routes = await evaluate(`(()=>{window.__opened='';window.open=(url)=>{window.__opened=url};downloadProtected('IR-010','action-plan');const plan=window.__opened;window.__opened='';downloadProtected('IR-010','diagnostic');const diagnostic=window.__opened;window.__opened='';openDataRoom('IR-014');const dataRoom=window.__opened;window.__opened='';openCommitmentLetter('IR-015');return {plan,diagnostic,dataRoom,confirmedOpened:window.__opened,confirmed:docInfo('IR-015','s0',3).source,info:[...document.querySelectorAll('.docinfo')].every(x=>x.title.includes('Cargado el'))}})()`);
+    assert.match(routes.plan, /\/downloads\/plan-accion-ir-010\.docx$/);
+    assert.match(routes.diagnostic, /\/downloads\/diagnostico-ir-010\.pdf$/);
     assert.match(routes.dataRoom, /\/reports\/data-room-papeles-el-tunal\.xlsx$/);
     assert.equal(routes.confirmedOpened, '');
     assert.equal(routes.confirmed, 'confirmed');
+    assert.equal(routes.info, true);
 
     const empty = await evaluate(`(()=>{q.value='AGRONACER SAS';chain.value='Agricultura Sostenible';docf.value='';docs.value='';render();return {empty:content.textContent.includes('Sin empresas para esta combinación de filtros'),count:viewCount.textContent.trim()}})()`);
     assert.equal(empty.empty, true);
