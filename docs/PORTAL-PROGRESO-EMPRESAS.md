@@ -9,6 +9,7 @@ La interfaz no pide ni valida el NIT por su cuenta. El Worker existente de la Bi
 - `companyId`: código interno, por ejemplo `IR-001`
 - `companyName`: nombre visible
 - `aud`: `swc-empresa-progreso`
+- `iat`: emisión Unix en segundos
 - `exp`: expiración Unix en segundos, máximo 90 segundos
 
 El grant se envía a `empresa-progreso/index.html#swc_company_grant=<token>`. La página lo retira del URL y lo conserva solo en `sessionStorage`; la API exige el grant en el encabezado `Authorization` para cada lectura y descarga. El mismo secreto aleatorio debe configurarse como `COMPANY_GRANT_SECRET` en ambos Workers; nunca debe guardarse en GitHub. No reutilizar el grant de personal del dashboard.
@@ -30,11 +31,11 @@ La API lee `COMPANY_PROGRESS` (KV privada) por código interno. Cada valor puede
 {
   "updatedAt": "2026-11-27T12:00:00Z",
   "milestones": [{"title": "Diagnóstico", "description": "Documento revisado", "status": "Completado", "date": "2026-11-27", "mentor": "Nombre"}],
-  "bitacoras": [{"title": "Sesión 1", "summary": "Avances y próximos pasos", "date": "2026-11-27", "mentor": "Nombre"}]
+  "bitacoras": [{"id": "sesion-1", "title": "Sesión 1", "summary": "Avances y próximos pasos", "date": "2026-11-27", "mentor": "Nombre", "fileKey": "bitacoras/IR-001/sesion-1.pdf"}]
 }
 ```
 
-El Excel de bitácoras no se importa automáticamente con este cambio. Debe normalizarse e importarse a KV o migrarse al flujo de mentorías antes de presentar el historial como completo.
+El Excel de bitácoras no se importa automáticamente con este cambio. `fileKey` es metadato interno privado: la API solo acepta archivos bajo `bitacoras/<companyId>/` y nunca devuelve esa ruta al navegador. Debe normalizarse e importarse a KV o migrarse al flujo de mentorías antes de presentar el historial como completo.
 
 ## Puesta en marcha
 
