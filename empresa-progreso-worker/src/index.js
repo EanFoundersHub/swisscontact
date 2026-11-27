@@ -88,7 +88,14 @@ async function progress(request, env, claims, headers) {
   for (const [type, result] of [['diagnostico', diagnostico], ['plan', plan]]) {
     if (result) documents.push({ type, updatedAt: result.object.uploaded?.toISOString?.() || null });
   }
-  const bitacoras = Array.isArray(extra.bitacoras) ? extra.bitacoras : [];
+  const bitacoras = Array.isArray(extra.bitacoras) ? extra.bitacoras.map(item => ({
+    id: String(item.id || ''),
+    title: String(item.title || 'Bitácora de mentoría'),
+    summary: String(item.summary || ''),
+    date: String(item.date || ''),
+    mentor: String(item.mentor || ''),
+    fileId: item.fileKey ? String(item.id || '') : ''
+  })) : [];
   return json({
     companyName: String(claims.companyName || extra.companyName || 'Mi empresa').slice(0, 120),
     companyId,
@@ -97,6 +104,28 @@ async function progress(request, env, claims, headers) {
     bitacoras,
     updatedAt: extra.updatedAt || null
   }, 200, headers);
+}
+
+async function deliverBitacora(env, claims, url, headers) {
+  const fileId = url.searchParams.get('file') || '';
+  if (!/^[a-z0-9-]{1,80}$/i.test(fileId)) return new Response('Ruta inválida', { status: 400, headers });
+  const stored = env.COMPANY_PROGRESS ? await env.COMPANY_PROGRESS.get(claims.companyId) : null;
+  let extra = {};
+  try { if (stored) extra = JSON.parse(stored); } catch { extra = {}; }
+  const record = Array.isArray(extra.bitacoras) ? extra.bitacoras.find(item => String(item.id || '') === fileId) : null;
+  const key = String(record?.fileKey || '');
+  if (!record || !/^bitacoras\/IR-\d{3}\/[a-z0-9._-]+\.(pdf|docx|xlsx)$/i.test(key) || !key.startsWith(`bitacoras/${claims.companyId}/`)) {
+    return new Response('Bitácora no disponible', { status: 404, headers });
+  }
+  const object = await env.DOCUMENTS.get(key);
+  if (!object) return new Response('Bitácora no disponible', { status: 404, headers });
+  const contentType = key.endsWith('.pdf') ? 'application/pdf' : key.endsWith('.docx')
+    ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const filename = key.slice(key.lastIndexOf('/') + 1);
+  headers.set('Content-Type', contentType);
+  headers.set('Content-Disposition', `attachment; filename="${filename}"`);
+  return new Response(object.body, { headers });
 }
 
 async function deliverDocument(request, env, claims, url, headers) {
@@ -122,6 +151,7 @@ export default {
     if (!claims) return json({ error: 'Sesión no válida o vencida' }, 401, headers);
     if (url.pathname === '/api/progress') return progress(request, env, claims, headers);
     if (url.pathname === '/api/document') return deliverDocument(request, env, claims, url, headers);
+    if (url.pathname === '/api/bitacora') return deliverBitacora(env, claims, url, headers);
     return json({ error: 'No encontrado' }, 404, headers);
   }
 };
