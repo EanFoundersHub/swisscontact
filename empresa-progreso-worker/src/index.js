@@ -43,16 +43,31 @@ async function sign(value, secret) {
   return encodeBase64Url(new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(value))));
 }
 
+async function sameSignature(left, right) {
+  const [a, b] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(left)),
+    crypto.subtle.digest('SHA-256', encoder.encode(right))
+  ]);
+  const x = new Uint8Array(a);
+  const y = new Uint8Array(b);
+  let difference = x.length ^ y.length;
+  for (let index = 0; index < Math.max(x.length, y.length); index++) difference |= (x[index] || 0) ^ (y[index] || 0);
+  return difference === 0;
+}
+
 async function verifyGrant(request, env) {
   const header = request.headers.get('Authorization') || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
   const [payload, signature, extra] = token.split('.');
   if (!payload || !signature || extra || !env.COMPANY_GRANT_SECRET) return null;
-  if (signature !== await sign(payload, env.COMPANY_GRANT_SECRET)) return null;
+  if (!(await sameSignature(signature, await sign(payload, env.COMPANY_GRANT_SECRET)))) return null;
   try {
     const claims = JSON.parse(new TextDecoder().decode(decodeBase64Url(payload)));
     const id = String(claims.companyId || '');
-    if (claims.aud !== 'swc-empresa-progreso' || !Number.isFinite(claims.exp) || claims.exp <= Date.now() / 1000) return null;
+    const now = Math.floor(Date.now() / 1000);
+    const issuedAt = Number(claims.iat);
+    if (claims.aud !== 'swc-empresa-progreso' || !Number.isFinite(claims.exp) || !Number.isFinite(issuedAt)) return null;
+    if (claims.exp <= now || claims.exp <= issuedAt || claims.exp - issuedAt > 90 || issuedAt > now + 30) return null;
     if (!/^IR-(?:00[1-9]|0[12][0-9])$/.test(id) || id === 'IR-022') return null;
     return claims;
   } catch {
