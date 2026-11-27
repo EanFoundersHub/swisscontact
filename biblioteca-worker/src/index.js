@@ -95,14 +95,17 @@ async function login(request, env) {
   const form = await request.formData();
   const nit = normalizeNit(form.get("nit"));
   if (!/^(?:\d{4}|\d{9,10})$/.test(nit)) return htmlResponse(loginPage("Revisa el NIT o c\xF3digo de acceso e int\xE9ntalo de nuevo."), 401);
-  const candidate = await hmac(nit, env.AUTH_PEPPER);
+  let company = null;
+  try { company = JSON.parse(env.NIT_COMPANY_MAP || "{}")[nit] || null; } catch { return new Response("Server configuration error", { status: 500 }); }
   let allowed = [];
   try {
-    allowed = JSON.parse(env.AUTHORIZED_NIT_HASHES);
+    allowed = JSON.parse(env.AUTHORIZED_NIT_HASHES || "[]");
   } catch {
     return new Response("Server configuration error", { status: 500 });
   }
-  if (!Array.isArray(allowed) || !allowed.some((item) => typeof item === "string" && safeEqual(item, candidate))) {
+  const candidate = env.AUTH_PEPPER ? await hmac(nit, env.AUTH_PEPPER) : "";
+  const legacyAccessAllowed = Array.isArray(allowed) && candidate && allowed.some((item) => typeof item === "string" && safeEqual(item, candidate));
+  if (!company && !legacyAccessAllowed) {
     return htmlResponse(loginPage("El NIT o c\xF3digo de acceso no est\xE1 autorizado."), 401);
   }
   const expires = Math.floor(Date.now() / 1e3) + SESSION_SECONDS;
