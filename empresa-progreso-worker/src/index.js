@@ -68,7 +68,7 @@ async function verifyGrant(request, env) {
     const issuedAt = Number(claims.iat);
     if (claims.aud !== 'swc-empresa-progreso' || !Number.isFinite(claims.exp) || !Number.isFinite(issuedAt)) return null;
     if (claims.exp <= now || claims.exp <= issuedAt || claims.exp - issuedAt > 90 || issuedAt > now + 30) return null;
-    if (!/^IR-(?:00[1-9]|0[12][0-9])$/.test(id) || id === 'IR-022') return null;
+    if (!/^IR-(?:00[1-9]|0[12][0-9])$/.test(id) || id === 'IR-022' || id === 'IR-029') return null;
     return claims;
   } catch {
     return null;
