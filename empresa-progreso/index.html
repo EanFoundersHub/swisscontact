@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Mi proceso · Swisscontact</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="top"><div class="wrap top-inner"><a class="brand" href="../biblioteca-inversion/">Swisscontact <span>· EAN Impacta</span></a><a class="library-link" href="../biblioteca-inversion/">Biblioteca de inversión ↗</a></div></header>
+  <main class="wrap">
+    <section class="welcome card">
+      <p class="eyebrow">Acompañamiento empresarial</p>
+      <h1 id="companyName">Mi proceso de fortalecimiento</h1>
+      <p id="welcomeNote">Consulta tus hitos, documentos y bitácoras de mentoría.</p>
+    </section>
+    <nav class="tabs" aria-label="Secciones">
+      <button class="tab active" data-tab="progress">Mi avance</button>
+      <a class="tab" href="../biblioteca-inversion/">Biblioteca de inversión</a>
+    </nav>
+    <section id="loading" class="card">Validando tu acceso y consultando tu proceso…</section>
+    <section id="error" class="card error hidden" role="alert"></section>
+    <div id="content" class="hidden">
+      <section class="summary-grid">
+        <article class="card summary"><span>Hitos registrados</span><strong id="milestoneCount">—</strong></article>
+        <article class="card summary"><span>Documentos disponibles</span><strong id="documentCount">—</strong></article>
+        <article class="card summary"><span>Bitácoras de mentoría</span><strong id="logCount">—</strong></article>
+      </section>
+      <section class="card section">
+        <div class="section-head"><div><p class="eyebrow">Ruta de acompañamiento</p><h2>Hitos de tu empresa</h2></div><span id="updatedAt" class="muted"></span></div>
+        <ol id="milestones" class="milestones"></ol>
+        <p id="noMilestones" class="empty hidden">Aún no hay hitos publicados. Aquí aparecerán cuando el equipo registre avances.</p>
+      </section>
+      <section class="card section">
+        <div class="section-head"><div><p class="eyebrow">Tus archivos</p><h2>Diagnóstico y plan de trabajo</h2></div></div>
+        <div id="documents" class="documents"></div>
+        <p id="noDocuments" class="empty hidden">Todavía no hay documentos disponibles para esta empresa.</p>
+      </section>
+      <section class="card section">
+        <div class="section-head"><div><p class="eyebrow">Historial de mentoría</p><h2>Bitácoras</h2></div></div>
+        <div id="logs" class="logs"></div>
+        <p id="noLogs" class="empty hidden">Aún no hay bitácoras sincronizadas.</p>
+      </section>
+    </div>
+  </main>
+  <footer class="wrap muted">Programa de Alistamiento para la Inversión · 2026</footer>
+</body>
+</html>
