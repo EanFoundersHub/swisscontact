@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "swc-empresa-progreso",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": false,
+  "preview_urls": false,
+  "vars": {
+    "ALLOWED_ORIGIN": "https://eanfoundershub.github.io"
+  },
+  "r2_buckets": [
+    { "binding": "DOCUMENTS", "bucket_name": "swisscontact-diagnosticos" }
+  ],
+  "kv_namespaces": [
+    { "binding": "COMPANY_PROGRESS", "id": "REPLACE_WITH_PRIVATE_KV_NAMESPACE_ID" }
+  ],
+  "routes": [
+    { "pattern": "progreso.example.org/*", "zone_name": "example.org" }
+  ]
+}
